@@ -19,20 +19,45 @@
 
     <style>
         /* 1. RESET Y VARIABLES ESTRATO */
-        * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
-        :root { 
-            --primary: #052c52; --accent: #e67e22; --blue-light: #3498db; --bg: #f0f2f5; 
-            --green: #27ae60; --red: #e74c3c; --white: #ffffff; --cad: #111111;
-        }
-        html, body { 
-            width: 100%; height: 100%; overflow-x: hidden; 
-            background: var(--bg); font-family: 'Segoe UI', sans-serif; 
-            -webkit-tap-highlight-color: transparent;
-        }
-        .main-wrapper { width: 100%; display: block; min-height: 100vh; position: relative; }
+        * { box-sizing: border-box; margin: 0; padding: 0; touch-action: pan-x pan-y; } /* Limitamos el touch para evitar zoom accidental */
+
+:root { 
+    --primary: #052c52; --accent: #e67e22; --blue-light: #3498db; --bg: #f0f2f5; 
+    --green: #27ae60; --red: #e74c3c; --white: #ffffff; --cad: #111111;
+}
+
+html, body { 
+    width: 100%; 
+    min-height: 100vh; /* Permite que la página crezca según el contenido */
+    margin: 0;
+    padding: 0;
+    background: var(--bg); 
+    font-family: 'Segoe UI', sans-serif; 
+    
+    overscroll-behavior-y: contain; 
+}
+
+.main-wrapper { 
+    width: 100%;
+    min-height: 100vh;
+    display: block;
+}
+
 
         /* 2. HEADER */
-        .header { background: var(--primary); padding: 20px 15px; color: var(--white) !important; border-bottom: 4px solid var(--accent); display: flex; flex-direction: column; gap: 5px; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .header { 
+    background: var(--primary); 
+    /* Modifica el padding para incluir el área segura del iPhone */
+    padding: calc(10px + env(safe-area-inset-top)) 15px 20px 15px; 
+    
+    color: var(--white) !important; 
+    border-bottom: 4px solid var(--accent); 
+    display: flex; 
+    flex-direction: column; 
+    gap: 5px; 
+    width: 100%; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+}
         .header-top { display: flex; justify-content: space-between; align-items: center; }
         .header h1 { margin: 0; font-size: 19px; font-weight: 900; text-transform: uppercase; color: var(--white); }
         .header h1 span { color: var(--accent); }
@@ -40,7 +65,16 @@
         .header-sub { font-size: 10px; color: var(--white); opacity: 0.85; letter-spacing: 0.5px; }
 
         /* 3. CONTENEDOR APP */
-        .app-container { padding: 10px; display: flex; flex-direction: column; gap: 12px; width: 100%; position: relative; z-index: 1; }
+        .app-container { 
+    padding: 10px; 
+    padding-bottom: 100px; /* Espacio extra para que el botón de 'Añadir' no tape la tabla */
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    width: 100%; 
+    position: relative; 
+    z-index: 1; 
+}
 
         /* 4. TARJETAS */
         .geo-card { background: var(--white); border-radius: 10px; border: 1px solid #d1d9e0; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; position: relative; }
@@ -72,9 +106,51 @@
         .edit-cell { background: #fffef0; color: var(--accent); border: 1px dashed #f39c12 !important; }
 
         /* 8. MODALES */
-        .modal-full { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--cad); z-index: 2000; flex-direction: column; }
-        .modal-white { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; padding: 15px; }
-        .modal-box { background: white; width: 95%; max-width: 500px; border-radius: 12px; padding: 20px; max-height: 80vh; overflow-y: auto; }
+        .modal-full { 
+    display: none; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: var(--cad); 
+    z-index: 2000; 
+    flex-direction: column;
+    
+    /* Añade este padding superior */
+    padding-top: env(safe-area-inset-top); 
+    
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch;
+}
+      
+      .modal-box { 
+    background: white; 
+    width: 95%; 
+    max-width: 500px; 
+    border-radius: 12px; 
+    padding: 20px; 
+    /* AJUSTA ESTO: */
+    max-height: 90vh; /* Que no ocupe el 100% para que se vea el fondo */
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch;
+}
+        .modal-white { 
+    display: none; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.8); 
+    z-index: 2000; 
+    justify-content: center; 
+    align-items: center; 
+    padding: 15px; 
+    /* AGREGA ESTO: */
+    overflow-y: auto; 
+}
+        
 
         /* 9. ELEMENTOS CROQUIS */
         #norte-indicator { position: absolute; top: 70px; right: 20px; color: white; text-align: center; font-weight: bold; pointer-events: none; z-index: 10; }
@@ -99,6 +175,16 @@
 }
         .gps-calculando { animation: pulse-naranja 1.2s infinite; border-color: var(--accent) !important; color: var(--accent) !important; }
         @keyframes pulse-naranja { 0% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.5); } 70% { box-shadow: 0 0 0 12px rgba(230, 126, 34, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0); } }
+      
+      
+      /* Añade esto a tu CSS para la lista de proyectos */
+#lista-proyectos {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 20px; /* Margen extra al final para que el último botón no se corte */
+}
     </style>
 </head>
 <body>
@@ -114,7 +200,7 @@
 
     <div class="app-container">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <button class="btn btn-new" onclick="nuevoProyecto()">➕ NUEVA MINA</button>
+            <button class="btn btn-new" onclick="nuevoProyecto()">➕ NUEVO LEVANTAMIENTO</button>
             <button class="btn btn-rev" onclick="abrirRevision()">📂 REVISAR PROYECTOS</button>
         </div>
 
@@ -218,12 +304,37 @@
     let initialPinchDist = null;
 
     window.onload = () => {
-        canvas = document.getElementById('topo-canvas');
-        ctx = canvas.getContext('2d');
-        actualizarFechaHora();
-        cargarListaProyectos();
-        initCanvasEvents();
-    };
+    canvas = document.getElementById('topo-canvas');
+    ctx = canvas.getContext('2d');
+    
+    // RECUPERACIÓN DE EMERGENCIA
+    const rescate = JSON.parse(localStorage.getItem("SURVEY_RESCUE"));
+    if (rescate) {
+        document.getElementById('mina_id').value = rescate.mina || "";
+        // Añadimos estos dos para que no se pierdan:
+        if(document.getElementById('tec_id')) document.getElementById('tec_id').value = rescate.tec || "Byron Bravo";
+        if(document.getElementById('proj_sector')) document.getElementById('proj_sector').value = rescate.sec || "";
+        
+        document.getElementById('base_x').value = rescate.bx || "";
+        document.getElementById('base_y').value = rescate.by || "";
+        document.getElementById('base_z').value = rescate.bz || "";
+        
+        if(rescate.puntos) { 
+            puntos = rescate.puntos; 
+            recalcularYUI(); 
+        }
+    }
+
+    actualizarFechaHora();
+    cargarListaProyectos();
+    initCanvasEvents();
+    
+    // Activa el guardado mientras escribes (incluyendo técnico y sector)
+    ['mina_id','tec_id','proj_sector','base_x','base_y','base_z'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('input', backupSesionInmediato);
+    });
+};
 
     function actualizarFechaHora() {
         const ahora = new Date();
@@ -232,7 +343,7 @@
     }
 
     function registrarPunto() {
-    const campoID = document.getElementById('topo_id'); // Referencia al campo del nombre
+    const campoID = document.getElementById('topo_id'); 
     const id = campoID.value.toUpperCase().trim();
     const origen = document.getElementById('topo_origen').value;
     const azi = parseFloat(document.getElementById('topo_azi').value);
@@ -268,26 +379,41 @@
     localStorage.setItem("SURVEY_ULTIMO_BACKUP", JSON.stringify(puntos));
 
     actualizarUI();
-
-    // --- LÓGICA DE AUTO-INCREMENTO (Aquí es donde ocurre la magia) ---
-    const match = id.match(/^([a-zA-Z]+)(\d+)$/); // Busca letras seguidas de números
+    
+    // Llamamos al respaldo de seguridad
+    backupSesionInmediato();
+	
+    // --- LÓGICA DE AUTO-INCREMENTO ---
+    const match = id.match(/^([a-zA-Z]+)(\d+)$/); 
     if (match) {
-        let prefijo = match[1]; // Ejemplo: "P" o "T" o "DER"
-        let numero = parseInt(match[2]); // Ejemplo: 01
+        let prefijo = match[1]; 
+        let numero = parseInt(match[2]); 
         let nuevoNumero = numero + 1;
-        // Mantenemos el formato (si pusiste 01, el siguiente será 02)
         let numeroFormateado = nuevoNumero.toString().padStart(match[2].length, '0');
         campoID.value = prefijo + numeroFormateado;
     } else {
-        // Si no detecta formato Pro01, simplemente limpia para que pongas el siguiente manual
         campoID.value = ""; 
     }
 
-    // Limpiamos distancia y damos foco al Azimut para el siguiente disparo
+    // Limpieza y foco
     document.getElementById('topo_dist').value = ""; 
     document.getElementById('topo_azi').focus();
-}
-
+} 
+    
+  
+  function backupSesionInmediato() {
+    const backup = {
+        mina: document.getElementById('mina_id').value,
+        tec: document.getElementById('tec_id').value, // <--- Añade esto
+        sec: document.getElementById('proj_sector').value, // <--- Añade esto
+        bx: document.getElementById('base_x').value,
+        by: document.getElementById('base_y').value,
+        bz: document.getElementById('base_z').value,
+        puntos: puntos 
+    };
+    localStorage.setItem("SURVEY_RESCUE", JSON.stringify(backup));
+    console.log("Sesión respaldada automáticamente.");
+} //
     function recalcularYUI() {
         const bx = parseFloat(document.getElementById('base_x').value) || 0;
         const by = parseFloat(document.getElementById('base_y').value) || 0;
@@ -325,7 +451,13 @@
     }
 
     function editP(i, c, v) { const n = parseFloat(v); if(!isNaN(n)) { puntos[i][c] = n; recalcularYUI(); } }
-    function delP(i) { if(confirm("¿Eliminar?")) { puntos.splice(i, 1); recalcularYUI(); } }
+    function delP(i) { 
+    if(confirm("¿Eliminar?")) { 
+        puntos.splice(i, 1); 
+        recalcularYUI(); 
+        backupSesionInmediato(); // 
+    } 
+}
 
     function obtenerGPS_UTM_Offline() {
     const btn = document.getElementById('btn-gps-base');
@@ -474,14 +606,45 @@ function finalizarCapturaGPS(pos, watchID) {
     }
 
     function cargarListaProyectos() {
-        const c = document.getElementById('lista-proyectos'); if(!c) return;
-        c.innerHTML = "";
-        Object.keys(localStorage).filter(k => k.startsWith("MINA_")).forEach(key => {
-            const d = JSON.parse(localStorage.getItem(key));
-            c.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;"><span><b>${d.m}</b></span><button onclick="cargarMina('${key}')" style="background:var(--primary); color:white; border:none; padding:5px 10px; border-radius:4px;">CARGAR</button></div>`;
-        });
+    const c = document.getElementById('lista-proyectos'); 
+    if(!c) return;
+    c.innerHTML = "";
+    
+    // Filtrar solo las llaves que empiezan con MINA_
+    const proyectos = Object.keys(localStorage).filter(k => k.startsWith("MINA_"));
+
+    if (proyectos.length === 0) {
+        c.innerHTML = `<p style="text-align:center; color:#64748b; font-size:11px; padding:20px;">No hay proyectos guardados.</p>`;
+        return;
     }
 
+    proyectos.forEach(key => {
+        const d = JSON.parse(localStorage.getItem(key));
+        c.innerHTML += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
+                <span style="font-size:12px; color:var(--primary);"><b>${d.m}</b></span>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="cargarMina('${key}')" 
+                            style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">
+                        ABRIR
+                    </button>
+                    <button onclick="eliminarProyectoSeguro('${key}')" 
+                            style="background:var(--red); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">
+                        BORRAR
+                    </button>
+                </div>
+            </div>`;
+    });
+}
+
+ 	function eliminarProyectoSeguro(key) {
+        const nombreMina = key.replace("MINA_", "");
+        if (confirm(`⚠️ ¿Deseas eliminar permanentemente el proyecto: ${nombreMina}?`)) {
+            localStorage.removeItem(key);
+            cargarListaProyectos();
+            alert("🗑️ Proyecto eliminado.");
+        }
+    }
     function cargarMina(key) {
         const d = JSON.parse(localStorage.getItem(key));
         document.getElementById('mina_id').value = d.m; 
