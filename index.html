@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SURVEYMINE PRO v7.0</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-512.png">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="SurveyMine">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <meta name="theme-color" content="#052c52">
+
+    <style>
+        /* 1. RESET Y VARIABLES ESTRATO */
+        * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+        :root { 
+            --primary: #052c52; --accent: #e67e22; --blue-light: #3498db; --bg: #f0f2f5; 
+            --green: #27ae60; --red: #e74c3c; --white: #ffffff; --cad: #111111;
+        }
+        html, body { 
+            width: 100%; height: 100%; overflow-x: hidden; 
+            background: var(--bg); font-family: 'Segoe UI', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        .main-wrapper { width: 100%; display: block; min-height: 100vh; position: relative; }
+
+        /* 2. HEADER */
+        .header { background: var(--primary); padding: 20px 15px; color: var(--white) !important; border-bottom: 4px solid var(--accent); display: flex; flex-direction: column; gap: 5px; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { margin: 0; font-size: 19px; font-weight: 900; text-transform: uppercase; color: var(--white); }
+        .header h1 span { color: var(--accent); }
+        .v-box { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: var(--white); font-size: 9px; padding: 3px 10px; border-radius: 20px; font-weight: 700; }
+        .header-sub { font-size: 10px; color: var(--white); opacity: 0.85; letter-spacing: 0.5px; }
+
+        /* 3. CONTENEDOR APP */
+        .app-container { padding: 10px; display: flex; flex-direction: column; gap: 12px; width: 100%; position: relative; z-index: 1; }
+
+        /* 4. TARJETAS */
+        .geo-card { background: var(--white); border-radius: 10px; border: 1px solid #d1d9e0; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; position: relative; }
+        .geo-card h4 { background: #f8fafc; margin: -15px -15px 15px -15px; padding: 10px 15px; border-bottom: 2px solid #e2e8f0; color: var(--primary); font-size: 10px; text-transform: uppercase; font-weight: 800; }
+
+        /* 5. FORMULARIOS */
+        .label { font-size: 8.5px; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-bottom: 3px; display: block; }
+        .in-field { 
+            width: 100%; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 16px !important;
+            margin-bottom: 8px; outline: none; height: 42px; background: #fff; display: block;
+            position: relative; z-index: 50 !important; -webkit-user-select: text; user-select: text;
+        }
+        .in-field[readonly] { background: #f8fafc; color: #64748b; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .grid-gps { display: grid; grid-template-columns: 1fr 1fr 1fr 50px; gap: 6px; align-items: flex-end; }
+
+        /* 6. BOTONES */
+        .btn { color: white; border: none; border-radius: 6px; font-weight: 800; font-size: 10px; cursor: pointer; text-transform: uppercase; display: flex; align-items: center; justify-content: center; height: 44px; transition: 0.1s; width: 100%; position: relative; z-index: 60; }
+        .btn-new { background: var(--accent); }
+        .btn-rev { background: var(--primary); }
+        .btn-add { background: var(--primary); box-shadow: 0 3px 0 #031a31; }
+        .btn-sketch { background: var(--blue-light); border-bottom: 4px solid #2980b9; margin-top: 5px; }
+
+        /* 7. TABLA */
+        .table-wrapper { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 400px; }
+        th { background: #f8fafc; color: var(--primary); padding: 8px; border-bottom: 2px solid #cbd5e1; }
+        td { padding: 10px; text-align: center; border-bottom: 1px solid #f1f5f9; font-weight: 700; }
+        .edit-cell { background: #fffef0; color: var(--accent); border: 1px dashed #f39c12 !important; }
+
+        /* 8. MODALES */
+        .modal-full { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--cad); z-index: 2000; flex-direction: column; }
+        .modal-white { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; padding: 15px; }
+        .modal-box { background: white; width: 95%; max-width: 500px; border-radius: 12px; padding: 20px; max-height: 80vh; overflow-y: auto; }
+
+        /* 9. ELEMENTOS CROQUIS */
+        #norte-indicator { position: absolute; top: 70px; right: 20px; color: white; text-align: center; font-weight: bold; pointer-events: none; z-index: 10; }
+        #escala-grafica { 
+    position: absolute; 
+    bottom: 30px; 
+    left: 20px; 
+    color: white; 
+    border-bottom: 2px solid white; 
+    border-left: 2px solid white; 
+    border-right: 2px solid white; 
+    height: 8px; /* Altura de las "patitas" de la escala */
+    font-size: 10px; 
+    text-align: center; 
+    pointer-events: none; 
+    z-index: 10; 
+    /* Esto empuja el texto hacia arriba de la línea */
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 12px; 
+}
+        .gps-calculando { animation: pulse-naranja 1.2s infinite; border-color: var(--accent) !important; color: var(--accent) !important; }
+        @keyframes pulse-naranja { 0% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.5); } 70% { box-shadow: 0 0 0 12px rgba(230, 126, 34, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0); } }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <div class="header">
+        <div class="header-top">
+            <h1>SURVEYMINE <span>PRO</span></h1>
+            <div class="v-box">v7.0 PRO</div>
+        </div>
+        <div class="header-sub">SISTEMA DE LEVANTAMIENTO SUBTERRÁNEO • BYRON B. (2026)</div>
+    </div>
+
+    <div class="app-container">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button class="btn btn-new" onclick="nuevoProyecto()">➕ NUEVA MINA</button>
+            <button class="btn btn-rev" onclick="abrirRevision()">📂 REVISAR PROYECTOS</button>
+        </div>
+
+        <div class="geo-card">
+            <h4>📋 DATOS GENERALES Y PP</h4>
+            <div class="grid-2">
+                <div><label class="label">TÉCNICO</label><input type="text" id="tec_id" class="in-field" value="Byron Bravo"></div>
+                <div><label class="label">SECTOR</label><input type="text" id="proj_sector" class="in-field" placeholder="Zaruma"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px;">
+                <div><label class="label">MINA / PROYECTO</label><input type="text" id="mina_id" class="in-field" placeholder="Mina-01"></div>
+                <div><label class="label">FECHA</label><input type="text" id="fecha_proj" class="in-field" readonly></div>
+                <div><label class="label">HORA</label><input type="text" id="hora_proj" class="in-field" readonly></div>
+            </div>
+            <label class="label">COORDENADAS DE PARTIDA (PP) - UTM</label>
+<div id="gps-status-txt" style="font-size:8px; color:var(--accent); text-align:right; min-height:10px; font-weight:bold;"></div> 
+<div class="grid-gps">
+    <div>
+        <span class="label" style="color:#64748b">ESTE (X)</span>
+        <input type="number" id="base_x" class="in-field" value="654321">
+    </div>
+    <div>
+        <span class="label" style="color:#64748b">NORTE (Y)</span>
+        <input type="number" id="base_y" class="in-field" value="9587654">
+    </div>
+    <div>
+        <span class="label" style="color:#64748b">ELEV. (Z)</span>
+        <input type="number" id="base_z" class="in-field" value="1200">
+    </div>
+    <button id="btn-gps-base" onclick="obtenerGPS_UTM_Offline()" class="btn" style="background:white; color:var(--primary); border:2px solid #cbd5e1; font-size:20px; height:42px; margin-bottom:8px;">⌖</button>
+</div>
+        </div>
+
+        <div class="geo-card">
+            <h4>📏 REGISTRO DE MEDICIONES</h4>
+            <div class="grid-2">
+                <div>
+                    <label class="label">DESDE</label>
+                    <select id="topo_origen" class="in-field" style="border-left: 5px solid var(--accent); font-weight: 800;">
+                        <option value="base">PP</option>
+                    </select>
+                </div>
+                <div><label class="label">HASTA</label><input type="text" id="topo_id" class="in-field" placeholder="P1"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 6px;">
+                <div><label class="label">AZ° (Hz)</label><input type="number" id="topo_azi" class="in-field"></div>
+                <div><label class="label">INC° (V)</label><input type="number" id="topo_inc" class="in-field" value="0"></div>
+                <div><label class="label">DIST (m)</label><input type="number" id="topo_dist" class="in-field"></div>
+            </div>
+            <button class="btn btn-add" onclick="registrarPunto()">➕ AGREGAR TRAMO</button>
+            <button class="btn btn-sketch" onclick="abrirSketch()">👁️ VER PLANO DINÁMICO</button>
+        </div>
+
+        <div class="geo-card">
+            <h4>📖 BITÁCORA TÉCNICA</h4>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>DE</th><th>A</th><th>AZ°</th><th>INC°</th><th>DIST.m</th><th>DEL</th></tr></thead>
+                    <tbody id="cuerpo_tabla"></tbody>
+                </table>
+            </div>
+            <div class="grid-2" style="margin-top:15px;">
+                <button class="btn" style="background:var(--green);" onclick="guardarMinaLocalStorage()">💾 GUARDAR</button>
+                <button class="btn" style="background:var(--cad);" onclick="exportarExcel()">📗 EXCEL</button>
+            </div>
+        </div>
+    </div> 
+
+    <div style="text-align: center; padding: 20px; font-size: 9px; color: #94a3b8; font-weight: bold;">
+        ESTRATO GEOCIENCIAS • OFFLINE UTM SYSTEM
+    </div>
+</div>
+
+<div id="modal-revision" class="modal-white">
+    <div class="modal-box">
+        <h4 style="color:var(--primary); border-bottom:2px solid var(--accent); padding-bottom:10px; margin-bottom:15px;">MINAS GUARDADAS</h4>
+        <div id="lista-proyectos"></div>
+        <button class="btn" style="background:var(--red); margin-top:20px;" onclick="cerrarRevision()">CERRAR</button>
+    </div>
+</div>
+
+<div id="modal-sketch" class="modal-full">
+    <div style="background:var(--primary); padding:12px; display:flex; justify-content:space-between; align-items:center; color:white;">
+        <span style="font-weight:900; font-size:12px;">CROQUIS DE MINA</span>
+        <button onclick="cerrarSketch()" style="background:var(--accent); border:none; color:white; padding:6px 15px; border-radius:4px; font-weight:bold;">VOLVER</button>
+    </div>
+    <div id="canvas-container" style="flex:1; position:relative; overflow: hidden; background: #111;">
+        <canvas id="topo-canvas"></canvas>
+        <div id="norte-indicator">
+            <div>N</div>
+            <svg viewBox="0 0 24 24" width="30"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#e67e22"/></svg>
+        </div>
+        <div id="escala-grafica">10m</div>
+    </div>
+</div>
+
+<script>
+    let puntos = [];
+    let canvas, ctx, scale = 20, offsetX = 0, offsetY = 0;
+    let isDragging = false, lastX, lastY;
+    let initialPinchDist = null;
+
+    window.onload = () => {
+        canvas = document.getElementById('topo-canvas');
+        ctx = canvas.getContext('2d');
+        actualizarFechaHora();
+        cargarListaProyectos();
+        initCanvasEvents();
+    };
+
+    function actualizarFechaHora() {
+        const ahora = new Date();
+        document.getElementById('fecha_proj').value = ahora.toLocaleDateString();
+        document.getElementById('hora_proj').value = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function registrarPunto() {
+    const campoID = document.getElementById('topo_id'); // Referencia al campo del nombre
+    const id = campoID.value.toUpperCase().trim();
+    const origen = document.getElementById('topo_origen').value;
+    const azi = parseFloat(document.getElementById('topo_azi').value);
+    const inc = parseFloat(document.getElementById('topo_inc').value) || 0;
+    const dist = parseFloat(document.getElementById('topo_dist').value);
+
+    if (!id || isNaN(azi) || isNaN(dist)) return alert("⚠️ Faltan datos técnicos");
+    if (puntos.some(p => p.id === id)) return alert("⚠️ ID Duplicado");
+
+    const bx = parseFloat(document.getElementById('base_x').value) || 0;
+    const by = parseFloat(document.getElementById('base_y').value) || 0;
+    const bz = parseFloat(document.getElementById('base_z').value) || 0;
+
+    let sx, sy, sz;
+    if (origen === "base") { sx = bx; sy = by; sz = bz; }
+    else {
+        const pad = puntos.find(pt => pt.id === origen);
+        sx = pad ? pad.x : bx; sy = pad ? pad.y : by; sz = pad ? pad.z : bz;
+    }
+
+    const rA = (azi - 90) * (Math.PI / 180);
+    const rI = inc * (Math.PI / 180);
+    const dH = dist * Math.cos(rI);
+
+    const nuevoPunto = { 
+        id, origen, azi, inc, dist, 
+        x: sx + (dH * Math.cos(rA)), 
+        y: sy - (dH * Math.sin(rA)), 
+        z: sz + (dist * Math.sin(rI)) 
+    };
+
+    puntos.push(nuevoPunto);
+    localStorage.setItem("SURVEY_ULTIMO_BACKUP", JSON.stringify(puntos));
+
+    actualizarUI();
+
+    // --- LÓGICA DE AUTO-INCREMENTO (Aquí es donde ocurre la magia) ---
+    const match = id.match(/^([a-zA-Z]+)(\d+)$/); // Busca letras seguidas de números
+    if (match) {
+        let prefijo = match[1]; // Ejemplo: "P" o "T" o "DER"
+        let numero = parseInt(match[2]); // Ejemplo: 01
+        let nuevoNumero = numero + 1;
+        // Mantenemos el formato (si pusiste 01, el siguiente será 02)
+        let numeroFormateado = nuevoNumero.toString().padStart(match[2].length, '0');
+        campoID.value = prefijo + numeroFormateado;
+    } else {
+        // Si no detecta formato Pro01, simplemente limpia para que pongas el siguiente manual
+        campoID.value = ""; 
+    }
+
+    // Limpiamos distancia y damos foco al Azimut para el siguiente disparo
+    document.getElementById('topo_dist').value = ""; 
+    document.getElementById('topo_azi').focus();
+}
+
+    function recalcularYUI() {
+        const bx = parseFloat(document.getElementById('base_x').value) || 0;
+        const by = parseFloat(document.getElementById('base_y').value) || 0;
+        const bz = parseFloat(document.getElementById('base_z').value) || 0;
+
+        puntos.forEach(p => {
+            let sx, sy, sz;
+            if (p.origen === "base") { sx = bx; sy = by; sz = bz; }
+            else {
+                const pad = puntos.find(pt => pt.id === p.origen);
+                sx = pad ? pad.x : bx; sy = pad ? pad.y : by; sz = pad ? pad.z : bz;
+            }
+            const rA = (p.azi - 90) * (Math.PI / 180);
+            const rI = p.inc * (Math.PI / 180);
+            const dH = p.dist * Math.cos(rI);
+            p.x = sx + (dH * Math.cos(rA));
+            p.y = sy - (dH * Math.sin(rA));
+            p.z = sz + (p.dist * Math.sin(rI));
+        });
+        actualizarUI();
+    }
+
+    function actualizarUI() {
+        const tbody = document.getElementById('cuerpo_tabla'); tbody.innerHTML = "";
+        const select = document.getElementById('topo_origen'); select.innerHTML = '<option value="base">PP</option>';
+        puntos.forEach((p, i) => {
+            tbody.innerHTML += `<tr><td>${p.origen==='base'?'PP':p.origen}</td><td><b>${p.id}</b></td>
+                <td class="edit-cell" contenteditable="true" onblur="editP(${i},'azi',this.innerText)">${p.azi}</td>
+                <td class="edit-cell" contenteditable="true" onblur="editP(${i},'inc',this.innerText)">${p.inc}</td>
+                <td class="edit-cell" contenteditable="true" onblur="editP(${i},'dist',this.innerText)">${p.dist}</td>
+                <td onclick="delP(${i})" style="color:var(--red); cursor:pointer;">✕</td></tr>`;
+            select.innerHTML += `<option value="${p.id}">${p.id}</option>`;
+        });
+        if(puntos.length > 0) select.value = puntos[puntos.length - 1].id;
+    }
+
+    function editP(i, c, v) { const n = parseFloat(v); if(!isNaN(n)) { puntos[i][c] = n; recalcularYUI(); } }
+    function delP(i) { if(confirm("¿Eliminar?")) { puntos.splice(i, 1); recalcularYUI(); } }
+
+    function obtenerGPS_UTM_Offline() {
+    const btn = document.getElementById('btn-gps-base');
+    const txt = document.getElementById('gps-status-txt');
+    
+    btn.classList.add('gps-calculando');
+    txt.innerHTML = "⏳ Calibrando satélites (buscando < 5m)...";
+
+    // Usamos watchPosition para monitorear la mejora de la señal
+    const watchID = navigator.geolocation.watchPosition(pos => {
+        const acc = pos.coords.accuracy;
+        txt.innerHTML = `⏳ Precisión actual: ±${acc.toFixed(1)}m`;
+
+        // Si la precisión es de 5.5 metros o mejor, capturamos y cerramos el sensor
+        if (acc <= 5.5) {
+            finalizarCapturaGPS(pos, watchID);
+        }
+    }, err => {
+        btn.classList.remove('gps-calculando');
+        txt.innerHTML = "❌ Error: Activa GPS de alta precisión";
+        navigator.geolocation.clearWatch(watchID);
+    }, { 
+        enableHighAccuracy: true, 
+        timeout: 20000, 
+        maximumAge: 0 
+    });
+
+    // Si pasan 15 segundos y no llega a 5m, capturamos lo mejor que tenga
+    setTimeout(() => {
+        navigator.geolocation.getCurrentPosition(pos => {
+            finalizarCapturaGPS(pos, watchID);
+        }, null, { enableHighAccuracy: true });
+    }, 15000);
+}
+
+function finalizarCapturaGPS(pos, watchID) {
+    const btn = document.getElementById('btn-gps-base');
+    const txt = document.getElementById('gps-status-txt');
+    navigator.geolocation.clearWatch(watchID); // Apagar sensor para ahorrar batería
+
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    
+    // Algoritmo UTM WGS84
+    const a = 6378137.0; const eccSq = 0.00669438; const k0 = 0.9996;
+    let zone = Math.floor((lon + 180) / 6) + 1;
+    let lonOR = ((zone - 1) * 6 - 180 + 3) * Math.PI / 180;
+    let latR = lat * Math.PI / 180; let lonR = lon * Math.PI / 180;
+    let N = a / Math.sqrt(1 - eccSq * Math.sin(latR)**2), T = Math.tan(latR)**2, C = eccSq * Math.cos(latR)**2 / (1 - eccSq), A = (lonR - lonOR) * Math.cos(latR);
+    let M = a * ((1 - eccSq/4 - 3*eccSq**2/64) * latR - (3*eccSq/8 + 3*eccSq**2/32) * Math.sin(2*latR) + (15*eccSq**2/256) * Math.sin(4*latR));
+    let x = k0 * N * (A + (1-T+C)*A**3/6 + (5-18*T+T**2+72*C)*A**5/120) + 500000.0;
+    let y = k0 * (M + N*Math.tan(latR)*(A**2/2 + (5-T+9*C+4*C**2)*A**4/24 + (61-58*T+T**2+600*C)*A**6/720));
+    if (lat < 0) y += 10000000.0;
+
+    document.getElementById('base_x').value = x.toFixed(2);
+    document.getElementById('base_y').value = y.toFixed(2);
+    document.getElementById('base_z').value = (pos.coords.altitude || 0).toFixed(1);
+    
+    btn.classList.remove('gps-calculando');
+    txt.innerHTML = `✅ FIJADO: ±${pos.coords.accuracy.toFixed(1)}m`;
+    recalcularYUI();
+}
+
+    function draw() {
+        if(!ctx || !canvas) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const escalaBar = document.getElementById('escala-grafica');
+        if(escalaBar) { 
+            escalaBar.style.width = (10 * scale) + "px"; 
+            escalaBar.innerHTML = "10m";
+        }
+
+        const bx = parseFloat(document.getElementById('base_x').value) || 0;
+        const by = parseFloat(document.getElementById('base_y').value) || 0;
+        const cX = canvas.width / 2 + offsetX;
+        const cY = canvas.height / 2 + offsetY;
+        
+        ctx.fillStyle = "#e67e22"; ctx.fillRect(cX - 6, cY - 6, 12, 12);
+        ctx.fillStyle = "white"; ctx.font = "bold 12px Segoe UI"; ctx.fillText("PP", cX + 15, cY + 5);
+
+        puntos.forEach(p => {
+            let xS, yS;
+            if (p.origen === "base") { xS = bx; yS = by; }
+            else { const pad = puntos.find(pt => pt.id === p.origen); xS = pad ? pad.x : bx; yS = pad ? pad.y : by; }
+            
+            const px0 = cX + (xS - bx) * scale;
+            const py0 = cY - (yS - by) * scale;
+            const px1 = cX + (p.x - bx) * scale;
+            const py1 = cY - (p.y - by) * scale;
+
+            ctx.strokeStyle = p.origen === "base" ? "#3498db" : "#27ae60";
+            ctx.lineWidth = 3; ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px1, py1); ctx.stroke();
+            ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(px1, py1, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.fillText(p.id, px1 + 8, py1 - 8);
+        });
+    }
+
+    function initCanvasEvents() {
+        const wrap = document.getElementById('canvas-container');
+        const getPos = (e) => {
+            const t = e.touches ? e.touches[0] : e;
+            const rect = canvas.getBoundingClientRect();
+            return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+        };
+        const getDist = (t1, t2) => Math.sqrt(Math.pow(t2.clientX - t1.clientX, 2) + Math.pow(t2.clientY - t1.clientY, 2));
+
+        wrap.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                initialPinchDist = getDist(e.touches[0], e.touches[1]);
+            } else {
+                isDragging = true; const p = getPos(e); lastX = p.x; lastY = p.y;
+            }
+        }, { passive: false });
+
+        wrap.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && initialPinchDist) {
+                e.preventDefault();
+                const currentDist = getDist(e.touches[0], e.touches[1]);
+                const zoomFactor = currentDist / initialPinchDist;
+                scale *= zoomFactor;
+                if (scale < 0.5) scale = 0.5; if (scale > 500) scale = 500;
+                initialPinchDist = currentDist; draw();
+            } else if (isDragging) {
+                const p = getPos(e); offsetX += (p.x - lastX); offsetY += (p.y - lastY); lastX = p.x; lastY = p.y; draw();
+            }
+        }, { passive: false });
+
+        wrap.addEventListener('touchend', () => { isDragging = false; initialPinchDist = null; });
+        wrap.onwheel = (e) => { e.preventDefault(); scale *= e.deltaY > 0 ? 0.9 : 1.1; draw(); };
+    }
+
+    function abrirSketch() { 
+        document.getElementById('modal-sketch').style.display = 'flex'; 
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight - 60;
+        offsetX = 0; offsetY = 0; setTimeout(draw, 100); 
+    }
+    function cerrarSketch() { document.getElementById('modal-sketch').style.display = 'none'; }
+
+    function guardarMinaLocalStorage() {
+        const m = document.getElementById('mina_id').value.trim(); if(!m) return alert("Nombre mina?");
+        const data = { m, tec: document.getElementById('tec_id').value, sec: document.getElementById('proj_sector').value, f: document.getElementById('fecha_proj').value, base: { x: document.getElementById('base_x').value, y: document.getElementById('base_y').value, z: document.getElementById('base_z').value }, puntos };
+        localStorage.setItem("MINA_" + m, JSON.stringify(data)); alert("✅ GUARDADO");
+        cargarListaProyectos();
+    }
+
+    function cargarListaProyectos() {
+        const c = document.getElementById('lista-proyectos'); if(!c) return;
+        c.innerHTML = "";
+        Object.keys(localStorage).filter(k => k.startsWith("MINA_")).forEach(key => {
+            const d = JSON.parse(localStorage.getItem(key));
+            c.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;"><span><b>${d.m}</b></span><button onclick="cargarMina('${key}')" style="background:var(--primary); color:white; border:none; padding:5px 10px; border-radius:4px;">CARGAR</button></div>`;
+        });
+    }
+
+    function cargarMina(key) {
+        const d = JSON.parse(localStorage.getItem(key));
+        document.getElementById('mina_id').value = d.m; 
+        document.getElementById('base_x').value = d.base.x; document.getElementById('base_y').value = d.base.y; document.getElementById('base_z').value = d.base.z;
+        puntos = d.puntos; recalcularYUI(); cerrarRevision();
+    }
+
+    function nuevoProyecto() {
+        if(confirm("¿Limpiar todo?")) {
+            puntos = [];
+            document.getElementById('mina_id').value = "";
+            document.getElementById('base_x').value = ""; document.getElementById('base_y').value = ""; document.getElementById('base_z').value = "";
+            actualizarFechaHora(); recalcularYUI();
+        }
+    }
+
+    function cerrarRevision() { document.getElementById('modal-revision').style.display = 'none'; }
+    function abrirRevision() { document.getElementById('modal-revision').style.display = 'flex'; cargarListaProyectos(); }
+
+    function exportarExcel() {
+    if (puntos.length === 0) return alert("⚠️ No hay datos para exportar");
+
+    const m = document.getElementById('mina_id').value || 'Levantamiento';
+    const tec = document.getElementById('tec_id').value;
+    const sec = document.getElementById('proj_sector').value;
+
+    // 1. Obtener la coordenada del PP para la primera fila
+    const bx = parseFloat(document.getElementById('base_x').value) || 0;
+    const by = parseFloat(document.getElementById('base_y').value) || 0;
+    const bz = parseFloat(document.getElementById('base_z').value) || 0;
+
+    // 2. Crear el array de datos con encabezados correctos
+    // Incluimos el PP como el origen (Fila 1)
+    const datosExcel = [
+        {
+            "ESTACIÓN": "INICIO",
+            "PUNTO": "PP",
+            "AZIMUT (Hz)": "---",
+            "INCLIN. (V)": "---",
+            "DIST. (m)": "0.00",
+            "ESTE (X)": bx.toFixed(3),
+            "NORTE (Y)": by.toFixed(3),
+            "COTA (Z)": bz.toFixed(3),
+            "TÉCNICO": tec,
+            "SECTOR": sec
+        }
+    ];
+
+    // 3. Agregar todos los puntos levantados
+    puntos.forEach(p => {
+        datosExcel.push({
+            "ESTACIÓN": p.origen === 'base' ? 'PP' : p.origen,
+            "PUNTO": p.id,
+            "AZIMUT (Hz)": p.azi.toFixed(2),
+            "INCLIN. (V)": p.inc.toFixed(2),
+            "DIST. (m)": p.dist.toFixed(2),
+            "ESTE (X)": p.x.toFixed(3),
+            "NORTE (Y)": p.y.toFixed(3),
+            "COTA (Z)": p.z.toFixed(3),
+            "TÉCNICO": tec,
+            "SECTOR": sec
+        });
+    });
+
+    // 4. Generar el archivo con formato de hoja
+    const ws = XLSX.utils.json_to_sheet(datosExcel);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Levantamiento Minero");
+
+    // 5. Descargar el archivo
+    XLSX.writeFile(wb, `Levantamiento_${m}.xlsx`);
+}
+
+// Activador de Modo Offline
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SurveyMine: Sistema Offline Activo'))
+            .catch(err => console.error('SurveyMine: Error en SW', err));
+    });
+}
+</script>
+</body>
+</html>
