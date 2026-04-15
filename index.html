@@ -189,7 +189,7 @@ html, body {
     <div class="header">
         <div class="header-top">
             <h1>SURVEYMINE <span>PRO</span></h1>
-            <div class="v-box">v7.2 PRO</div>
+            <div class="v-box">v7.0 PRO</div>
         </div>
         <div class="header-sub">SISTEMA DE LEVANTAMIENTO SUBTERRÁNEO • BYRON B. (2026)</div>
     </div>
@@ -473,9 +473,20 @@ html, body {
     if (puntos.length > 0) {
         select.value = puntos[puntos.length - 1].id;
     }
-}}
+} //
 
-    function editP(i, c, v) { const n = parseFloat(v); if(!isNaN(n)) { puntos[i][c] = n; recalcularYUI(); } }
+    function editP(i, c, v) { // 
+    const valorLimpio = v.replace(',', '.').trim();
+    const n = parseFloat(valorLimpio); 
+    
+    if(!isNaN(n)) { 
+        puntos[i][c] = n; 
+        recalcularYUI();
+      	backupSesionInmediato();
+    } else {
+      	actualizarUI();
+    } 
+}
     function delP(i) { 
     if(confirm("¿Eliminar?")) { 
         puntos.splice(i, 1); 
@@ -807,7 +818,7 @@ function finalizarCapturaGPS(pos, watchID) {
     // 5. Descargar el archivo
     XLSX.writeFile(wb, `Levantamiento_${m}.xlsx`);
 }
-
+  
 // Activador de Modo Offline
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
