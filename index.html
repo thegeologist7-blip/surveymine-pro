@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SURVEYMINE PRO v7.5</title>
+    <title>SURVEYMINE PRO v7.6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <link rel="manifest" href="./manifest.json">
@@ -90,19 +90,99 @@ html, body {
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .grid-gps { display: grid; grid-template-columns: 1fr 1fr 1fr 50px; gap: 6px; align-items: flex-end; }
 
-        /* 6. BOTONES */
-        .btn { color: white; border: none; border-radius: 6px; font-weight: 800; font-size: 10px; cursor: pointer; text-transform: uppercase; display: flex; align-items: center; justify-content: center; height: 44px; transition: 0.1s; width: 100%; position: relative; z-index: 60; }
-        .btn-new { background: var(--accent); }
-        .btn-rev { background: var(--primary); }
-        .btn-add { background: var(--primary); box-shadow: 0 3px 0 #031a31; }
-        .btn-sketch { background: var(--blue-light); border-bottom: 4px solid #2980b9; margin-top: 5px; }
+        /* 6. BOTONES (ALINEACIÓN PERFECTA v7.2) */
+.btn { 
+    color: white; 
+    border: none; 
+    border-radius: 6px; 
+    font-weight: 800; 
+    font-size: 10px; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    height: 44px; /* Altura base igual para todos */
+    transition: 0.1s; 
+    width: 100%; 
+    position: relative; 
+    z-index: 60;
+    margin: 0; /* Eliminamos cualquier margen que desvíe la posición */
+}
 
-        /* 7. TABLA */
-        .table-wrapper { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 5px; }
-        table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 400px; }
-        th { background: #f8fafc; color: var(--primary); padding: 8px; border-bottom: 2px solid #cbd5e1; }
-        td { padding: 10px; text-align: center; border-bottom: 1px solid #f1f5f9; font-weight: 700; }
-        .edit-cell { background: #fffef0; color: var(--accent); border: 1px dashed #f39c12 !important; }
+.btn-new { background: var(--accent); border-bottom: 4px solid #b35d10; }
+.btn-rev { background: var(--primary); border-bottom: 4px solid #031a31; }
+
+/* Estos dos ahora son gemelos en estructura */
+.btn-add { 
+    background: var(--primary); 
+    border-bottom: 4px solid #031a31; 
+}
+
+.btn-sketch { 
+    background: var(--blue-light); 
+    border-bottom: 4px solid #2980b9; 
+    margin-top: 0 !important; /* Quitamos el margen que lo bajaba */
+}
+
+/* Efecto de pulsación para ambos */
+.btn:active {
+    transform: translateY(2px);
+    border-bottom-width: 2px;
+}
+        
+/* 7. TABLA OPTIMIZADA
+.table-wrapper { 
+    width: 100%; 
+    max-height: 320px; 
+    overflow-y: auto; 
+    overflow-x: hidden; /* Bloqueamos el scroll horizontal */
+    border: 1px solid #e2e8f0; 
+    border-radius: 8px; 
+    margin-top: 5px;
+    background: white;
+}
+
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    table-layout: fixed;
+  	font-size: 14px;
+}
+
+th { 
+    position: sticky; top: 0; z-index: 10; 
+    background: #f8fafc; color: var(--primary); 
+    padding: 10px 2px; 
+    font-size: 10px; /* Fuente pequeña para encabezados */
+    text-transform: uppercase;
+    border-bottom: 2px solid #cbd5e1;
+}
+
+td { 
+    padding: 10px 2px; 
+    text-align: center; 
+    border-bottom: 1px solid #f1f5f9; 
+    font-size: 14px !important;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+.edit-cell { 
+    background: #fffef0; 
+    color: var(--accent); 
+    border: 1px dashed #f39c12 !important; 
+    cursor: pointer;
+}
+
+.edit-cell:focus {
+    font-size: 16px !important; /* El iPhone no hará zoom porque ya es 16px */
+    background: #fff;
+    outline: none;
+}
 
         /* 8. MODALES */
         .modal-full { 
@@ -231,32 +311,44 @@ html, body {
         </div>
 
         <div class="geo-card">
-            <h4>📏 REGISTRO DE MEDICIONES</h4>
-            <div class="grid-2">
-                <div>
-                    <label class="label">DESDE</label>
-                    <select id="topo_origen" class="in-field" style="border-left: 5px solid var(--accent); font-weight: 800;">
-                        <option value="base">PP</option>
-                    </select>
-                </div>
-                <div><label class="label">HASTA</label><input type="text" id="topo_id" class="in-field" placeholder="P1"></div>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 6px;">
-                <div><label class="label">AZ° (Hz)</label><input type="number" id="topo_azi" class="in-field"></div>
-                <div><label class="label">INC° (V)</label><input type="number" id="topo_inc" class="in-field" value="0"></div>
-                <div><label class="label">DIST (m)</label><input type="number" id="topo_dist" class="in-field"></div>
-            </div>
-            <button class="btn btn-add" onclick="registrarPunto()">➕ AGREGAR TRAMO</button>
-            <button class="btn btn-sketch" onclick="abrirSketch()">👁️ VER PLANO DINÁMICO</button>
+    <h4>📏 REGISTRO DE MEDICIONES</h4>
+    <div class="grid-2">
+        <div>
+            <label class="label">DESDE</label>
+            <select id="topo_origen" class="in-field" style="border-left: 5px solid var(--accent); font-weight: 800;">
+                <option value="base">PP</option>
+            </select>
         </div>
+        <div><label class="label">HASTA</label><input type="text" id="topo_id" class="in-field" placeholder="P1"></div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 6px;">
+        <div><label class="label">AZ° (Hz)</label><input type="number" id="topo_azi" class="in-field"></div>
+        <div><label class="label">INC° (V)</label><input type="number" id="topo_inc" class="in-field" value="0"></div>
+        <div><label class="label">DIST (m)</label><input type="number" id="topo_dist" class="in-field"></div>
+    </div>
+    
+    <div class="grid-2" style="margin-top: 5px;">
+        <button class="btn btn-add" onclick="registrarPunto()">➕ AGREGAR TRAMO</button>
+        <button class="btn btn-sketch" onclick="abrirSketch()">👁️ REVISAR PLANO</button>
+    </div>
+</div>
 
         <div class="geo-card">
-            <h4>📖 BITÁCORA TÉCNICA</h4>
+            <h4>📖 LIBRETA DE DATOS</h4>
             <div class="table-wrapper">
                 <table>
-                    <thead><tr><th>DE</th><th>A</th><th>AZ°</th><th>INC°</th><th>DIST.m</th><th>DEL</th></tr></thead>
-                    <tbody id="cuerpo_tabla"></tbody>
-                </table>
+    <thead>
+        <tr>
+            <th style="width: 15%;">DE</th>
+            <th style="width: 15%;">A</th>
+            <th style="width: 20%;">AZ°</th>
+            <th style="width: 20%;">INC°</th>
+            <th style="width: 20%;">DIST</th>
+            <th style="width: 10%;">✕</th>
+        </tr>
+    </thead>
+    <tbody id="cuerpo_tabla"></tbody>
+</table>
             </div>
             <div class="grid-2" style="margin-top:15px;">
                 <button class="btn" style="background:var(--green);" onclick="guardarMinaLocalStorage()">💾 GUARDAR</button>
@@ -469,11 +561,23 @@ html, body {
         select.appendChild(opt);
     });
 
-    // Auto-seleccionar el último punto como origen por defecto
+    // 1. Auto-seleccionar el último punto como origen por defecto
     if (puntos.length > 0) {
         select.value = puntos[puntos.length - 1].id;
     }
-} //
+
+    // 2. AUTO-SCROLL: Desliza la tabla al final para ver el nuevo dato
+    const wrapper = document.querySelector('.table-wrapper');
+    if (wrapper) {
+        // Usamos un pequeño delay para que el navegador termine de renderizar la fila
+        setTimeout(() => {
+            wrapper.scrollTo({
+                top: wrapper.scrollHeight,
+                behavior: 'smooth'
+            });
+        }, 50);
+    }
+}
 
     function editP(i, c, v) { // 
     const valorLimpio = v.replace(',', '.').trim();
