@@ -411,40 +411,69 @@ html, body {
     console.log("Sesión respaldada automáticamente.");
 } //
     function recalcularYUI() {
-        const bx = parseFloat(document.getElementById('base_x').value) || 0;
-        const by = parseFloat(document.getElementById('base_y').value) || 0;
-        const bz = parseFloat(document.getElementById('base_z').value) || 0;
+    const bx = parseFloat(document.getElementById('base_x').value) || 0;
+    const by = parseFloat(document.getElementById('base_y').value) || 0;
+    const bz = parseFloat(document.getElementById('base_z').value) || 0;
 
-        puntos.forEach(p => {
-            let sx, sy, sz;
-            if (p.origen === "base") { sx = bx; sy = by; sz = bz; }
-            else {
-                const pad = puntos.find(pt => pt.id === p.origen);
-                sx = pad ? pad.x : bx; sy = pad ? pad.y : by; sz = pad ? pad.z : bz;
-            }
-            const rA = (p.azi - 90) * (Math.PI / 180);
-            const rI = p.inc * (Math.PI / 180);
-            const dH = p.dist * Math.cos(rI);
-            p.x = sx + (dH * Math.cos(rA));
-            p.y = sy - (dH * Math.sin(rA));
-            p.z = sz + (p.dist * Math.sin(rI));
-        });
-        actualizarUI();
-    }
+    puntos.forEach(p => {
+        let sx, sy, sz;
+        // Determinamos el origen del tramo
+        if (p.origen === "base") { 
+            sx = bx; sy = by; sz = bz; 
+        } else {
+            const pad = puntos.find(pt => pt.id === p.origen);
+            // Si no encuentra al padre, usa la base para no romper el cálculo
+            sx = pad ? pad.x : bx; 
+            sy = pad ? pad.y : by; 
+            sz = pad ? pad.z : bz;
+        }
+
+        // Trigonometría Minera (WGS84 / UTM)
+        const rA = (p.azi - 90) * (Math.PI / 180);
+        const rI = p.inc * (Math.PI / 180);
+        const dH = p.dist * Math.cos(rI);
+
+        p.x = sx + (dH * Math.cos(rA));
+        p.y = sy - (dH * Math.sin(rA));
+        p.z = sz + (p.dist * Math.sin(rI));
+    });
+    
+    actualizarUI();
+    // Importante: Después de recalcular, respaldamos en la "caja negra"
+    if(typeof backupSesionInmediato === 'function') backupSesionInmediato();
+}
 
     function actualizarUI() {
-        const tbody = document.getElementById('cuerpo_tabla'); tbody.innerHTML = "";
-        const select = document.getElementById('topo_origen'); select.innerHTML = '<option value="base">PP</option>';
-        puntos.forEach((p, i) => {
-            tbody.innerHTML += `<tr><td>${p.origen==='base'?'PP':p.origen}</td><td><b>${p.id}</b></td>
-                <td class="edit-cell" contenteditable="true" onblur="editP(${i},'azi',this.innerText)">${p.azi}</td>
-                <td class="edit-cell" contenteditable="true" onblur="editP(${i},'inc',this.innerText)">${p.inc}</td>
-                <td class="edit-cell" contenteditable="true" onblur="editP(${i},'dist',this.innerText)">${p.dist}</td>
-                <td onclick="delP(${i})" style="color:var(--red); cursor:pointer;">✕</td></tr>`;
-            select.innerHTML += `<option value="${p.id}">${p.id}</option>`;
-        });
-        if(puntos.length > 0) select.value = puntos[puntos.length - 1].id;
+    const tbody = document.getElementById('cuerpo_tabla'); 
+    tbody.innerHTML = "";
+    
+    const select = document.getElementById('topo_origen'); 
+    select.innerHTML = '<option value="base">PP</option>';
+
+    puntos.forEach((p, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${p.origen === 'base' ? 'PP' : p.origen}</td>
+            <td><b>${p.id}</b></td>
+            <td class="edit-cell" contenteditable="true" inputmode="decimal" onblur="editP(${i},'azi',this.innerText)">${p.azi}</td>
+            <td class="edit-cell" contenteditable="true" inputmode="decimal" onblur="editP(${i},'inc',this.innerText)">${p.inc}</td>
+            <td class="edit-cell" contenteditable="true" inputmode="decimal" onblur="editP(${i},'dist',this.innerText)">${p.dist}</td>
+            <td onclick="delP(${i})" style="color:var(--red); cursor:pointer; font-weight:bold;">✕</td>
+        `;
+        tbody.appendChild(row);
+        
+        // Alimentamos el selector de "Desde" para el siguiente punto
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.id;
+        select.appendChild(opt);
+    });
+
+    // Auto-seleccionar el último punto como origen por defecto
+    if (puntos.length > 0) {
+        select.value = puntos[puntos.length - 1].id;
     }
+}}
 
     function editP(i, c, v) { const n = parseFloat(v); if(!isNaN(n)) { puntos[i][c] = n; recalcularYUI(); } }
     function delP(i) { 
@@ -595,23 +624,38 @@ function finalizarCapturaGPS(pos, watchID) {
     function cerrarSketch() { document.getElementById('modal-sketch').style.display = 'none'; }
 
     function guardarMinaLocalStorage() {
-        const m = document.getElementById('mina_id').value.trim(); if(!m) return alert("Nombre mina?");
-        const data = { m, tec: document.getElementById('tec_id').value, sec: document.getElementById('proj_sector').value, f: document.getElementById('fecha_proj').value, base: { x: document.getElementById('base_x').value, y: document.getElementById('base_y').value, z: document.getElementById('base_z').value }, puntos };
-        localStorage.setItem("MINA_" + m, JSON.stringify(data)); alert("✅ GUARDADO");
-        cargarListaProyectos();
-    }
+    const m = document.getElementById('mina_id').value.trim(); 
+    if(!m) return alert("⚠️ ¿Nombre de la mina?");
+
+    const data = { 
+        m, 
+        tec: document.getElementById('tec_id').value, 
+        sec: document.getElementById('proj_sector').value, 
+        f: document.getElementById('fecha_proj').value, // Fecha como texto (para el input)
+        timestamp: Date.now(), // <--- Milisegundos exactos para ordenar de más reciente a antiguo
+        base: { 
+            x: document.getElementById('base_x').value, 
+            y: document.getElementById('base_y').value, 
+            z: document.getElementById('base_z').value 
+        }, 
+        puntos 
+    };
+
+    localStorage.setItem("MINA_" + m, JSON.stringify(data)); 
+    alert("✅ PROYECTO GUARDADO");
+    cargarListaProyectos();
+}
 
     function cargarListaProyectos() {
     const c = document.getElementById('lista-proyectos'); 
     if(!c) return;
     c.innerHTML = "";
     
-    // Obtenemos las llaves y las convertimos en objetos para poder ordenarlas
     const proyectos = Object.keys(localStorage)
         .filter(k => k.startsWith("MINA_"))
         .map(key => JSON.parse(localStorage.getItem(key)))
-        // Ordenamos por fecha (asumiendo que d.f tiene formato de fecha local)
-        .sort((a, b) => new Date(b.f) - new Date(a.f));
+        // ORDENAMIENTO CRÍTICO: Usamos timestamp (milisegundos) para que el más nuevo siempre esté arriba
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
     if (proyectos.length === 0) {
         c.innerHTML = `<p style="text-align:center; color:#64748b; font-size:11px; padding:20px;">No hay proyectos guardados.</p>`;
@@ -619,16 +663,27 @@ function finalizarCapturaGPS(pos, watchID) {
     }
 
     proyectos.forEach(d => {
-        const key = "MINA_" + d.m;
+        // Reconstruimos la key original para las funciones de Abrir y Borrar
+        const keyOriginal = "MINA_" + d.m;
+        
         c.innerHTML += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
-                <div style="display:flex; flex-direction:column;">
-                    <span style="font-size:12px; color:var(--primary); font-weight:800;">${d.m}</span>
-                    <span style="font-size:9px; color:#64748b;">📅 ${d.f || 'S/F'}</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee; background: white;">
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="font-size:13px; color:var(--primary); font-weight:800; text-transform: uppercase;">${d.m}</span>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span style="font-size:10px; color:#64748b;">📅 ${d.f || 'S/F'}</span>
+                        <span style="font-size:10px; color:var(--accent); font-weight:bold;">📍 ${d.sec || 'Zaruma'}</span>
+                    </div>
                 </div>
                 <div style="display:flex; gap:6px;">
-                    <button onclick="cargarMina('${key}')" style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:10px; font-weight:bold;">ABRIR</button>
-                    <button onclick="eliminarProyectoSeguro('${key}')" style="background:var(--red); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:10px; font-weight:bold;">BORRAR</button>
+                    <button onclick="cargarMina('${keyOriginal}')" 
+                            style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer;">
+                        ABRIR
+                    </button>
+                    <button onclick="eliminarProyectoSeguro('${keyOriginal}')" 
+                            style="background:var(--red); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer;">
+                        ✕
+                    </button>
                 </div>
             </div>`;
     });
@@ -644,28 +699,47 @@ function finalizarCapturaGPS(pos, watchID) {
     }
     function cargarMina(key) {
     const d = JSON.parse(localStorage.getItem(key));
-    if(!d) return;
+    if(!d) return alert("⚠️ Error: No se encontraron datos del proyecto.");
 
-    // Llenamos todos los campos con los datos guardados
+    // 1. Limpieza preventiva de puntos actuales
+    puntos = []; 
+
+    // 2. Llenado de Metadatos (Cuerpo del Informe)
     document.getElementById('mina_id').value = d.m || "";
     document.getElementById('tec_id').value = d.tec || "Byron Bravo";
     document.getElementById('proj_sector').value = d.sec || "";
     document.getElementById('fecha_proj').value = d.f || "";
     
-    // Coordenadas del PP
-    document.getElementById('base_x').value = d.base.x || "";
-    document.getElementById('base_y').value = d.base.y || "";
-    document.getElementById('base_z').value = d.base.z || "";
-
-    // Cargamos los puntos y refrescamos la interfaz
-    puntos = d.puntos || [];
-    recalcularYUI(); 
+    // Si guardaste la hora por separado en el objeto d, cárgala aquí:
+    if(d.h && document.getElementById('hora_proj')) {
+        document.getElementById('hora_proj').value = d.h;
+    }
     
-    // Actualizamos el respaldo de emergencia para que la "caja negra" sepa qué estamos editando
+    // 3. Coordenadas del Punto de Partida (PP)
+    if(d.base) {
+        document.getElementById('base_x').value = d.base.x || "";
+        document.getElementById('base_y').value = d.base.y || "";
+        document.getElementById('base_z').value = d.base.z || "";
+    }
+
+    // 4. Carga de Puntos y Sincronización
+    puntos = d.puntos || [];
+    
+    // Forzamos el recalculo y la actualización de la tabla (Bitácora)
+    recalcularYUI(); 
+    actualizarUI(); //
+
+    // 5. Sincronización de la "Caja Negra" (Respaldo de Emergencia)
+    // Esto es vital: le dice al sistema de rescate que ahora el "proyecto activo" es este.
     backupSesionInmediato(); 
     
+    // 6. UX: Cerrar lista y avisar al técnico
     cerrarRevision();
-    alert("📂 Proyecto " + d.m + " cargado con éxito.");
+    
+    // Un pequeño log en consola para que sepas qué timestamp tiene (opcional)
+    console.log("Cargado proyecto guardado el: " + new Date(d.timestamp).toLocaleString());
+    
+    alert("📂 " + d.m + " cargado con éxito.");
 }
 
     function nuevoProyecto() {
