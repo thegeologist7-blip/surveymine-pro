@@ -1,4 +1,4 @@
-const CACHE_NAME = 'surveymine-v7.9'; 
+const CACHE_NAME = 'surveymine-v8.0'; 
 
 const ASSETS_TO_CACHE = [
   './',
