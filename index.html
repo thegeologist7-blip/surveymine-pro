@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SURVEYMINE PRO v7.0</title>
-    
+    <title>SURVEYMINE PRO v7.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <link rel="manifest" href="./manifest.json">
@@ -67,7 +66,7 @@ html, body {
         /* 3. CONTENEDOR APP */
         .app-container { 
     padding: 10px; 
-    padding-bottom: 100px; /* Espacio extra para que el botón de 'Añadir' no tape la tabla */
+    padding-bottom: 100px; 
     display: flex; 
     flex-direction: column; 
     gap: 12px; 
@@ -116,10 +115,7 @@ html, body {
     background: var(--cad); 
     z-index: 2000; 
     flex-direction: column;
-    
-    /* Añade este padding superior */
     padding-top: env(safe-area-inset-top); 
-    
     overflow-y: auto; 
     -webkit-overflow-scrolling: touch;
 }
@@ -610,28 +606,29 @@ function finalizarCapturaGPS(pos, watchID) {
     if(!c) return;
     c.innerHTML = "";
     
-    // Filtrar solo las llaves que empiezan con MINA_
-    const proyectos = Object.keys(localStorage).filter(k => k.startsWith("MINA_"));
+    // Obtenemos las llaves y las convertimos en objetos para poder ordenarlas
+    const proyectos = Object.keys(localStorage)
+        .filter(k => k.startsWith("MINA_"))
+        .map(key => JSON.parse(localStorage.getItem(key)))
+        // Ordenamos por fecha (asumiendo que d.f tiene formato de fecha local)
+        .sort((a, b) => new Date(b.f) - new Date(a.f));
 
     if (proyectos.length === 0) {
         c.innerHTML = `<p style="text-align:center; color:#64748b; font-size:11px; padding:20px;">No hay proyectos guardados.</p>`;
         return;
     }
 
-    proyectos.forEach(key => {
-        const d = JSON.parse(localStorage.getItem(key));
+    proyectos.forEach(d => {
+        const key = "MINA_" + d.m;
         c.innerHTML += `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
-                <span style="font-size:12px; color:var(--primary);"><b>${d.m}</b></span>
+                <div style="display:flex; flex-direction:column;">
+                    <span style="font-size:12px; color:var(--primary); font-weight:800;">${d.m}</span>
+                    <span style="font-size:9px; color:#64748b;">📅 ${d.f || 'S/F'}</span>
+                </div>
                 <div style="display:flex; gap:6px;">
-                    <button onclick="cargarMina('${key}')" 
-                            style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">
-                        ABRIR
-                    </button>
-                    <button onclick="eliminarProyectoSeguro('${key}')" 
-                            style="background:var(--red); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">
-                        BORRAR
-                    </button>
+                    <button onclick="cargarMina('${key}')" style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:10px; font-weight:bold;">ABRIR</button>
+                    <button onclick="eliminarProyectoSeguro('${key}')" style="background:var(--red); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:10px; font-weight:bold;">BORRAR</button>
                 </div>
             </div>`;
     });
@@ -646,11 +643,30 @@ function finalizarCapturaGPS(pos, watchID) {
         }
     }
     function cargarMina(key) {
-        const d = JSON.parse(localStorage.getItem(key));
-        document.getElementById('mina_id').value = d.m; 
-        document.getElementById('base_x').value = d.base.x; document.getElementById('base_y').value = d.base.y; document.getElementById('base_z').value = d.base.z;
-        puntos = d.puntos; recalcularYUI(); cerrarRevision();
-    }
+    const d = JSON.parse(localStorage.getItem(key));
+    if(!d) return;
+
+    // Llenamos todos los campos con los datos guardados
+    document.getElementById('mina_id').value = d.m || "";
+    document.getElementById('tec_id').value = d.tec || "Byron Bravo";
+    document.getElementById('proj_sector').value = d.sec || "";
+    document.getElementById('fecha_proj').value = d.f || "";
+    
+    // Coordenadas del PP
+    document.getElementById('base_x').value = d.base.x || "";
+    document.getElementById('base_y').value = d.base.y || "";
+    document.getElementById('base_z').value = d.base.z || "";
+
+    // Cargamos los puntos y refrescamos la interfaz
+    puntos = d.puntos || [];
+    recalcularYUI(); 
+    
+    // Actualizamos el respaldo de emergencia para que la "caja negra" sepa qué estamos editando
+    backupSesionInmediato(); 
+    
+    cerrarRevision();
+    alert("📂 Proyecto " + d.m + " cargado con éxito.");
+}
 
     function nuevoProyecto() {
         if(confirm("¿Limpiar todo?")) {
