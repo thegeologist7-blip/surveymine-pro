@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SURVEYMINE PRO v7.9</title>
+    <title>SURVEYMINE PRO v8.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <link rel="manifest" href="./manifest.json">
@@ -131,7 +131,7 @@ html, body {
     border-bottom-width: 2px;
 }
         
-/* 7. TABLA OPTIMIZADA */
+/* 7. TABLA OPTIMIZADA*/
 .table-wrapper { 
     width: 100%; 
     max-height: 320px; 
@@ -269,7 +269,7 @@ td {
     <div class="header">
         <div class="header-top">
             <h1>SURVEYMINE <span>PRO</span></h1>
-            <div class="v-box">v7.9 PRO</div>
+            <div class="v-box">v8.0 PRO</div>
         </div>
         <div class="header-sub">SISTEMA DE LEVANTAMIENTO SUBTERRÁNEO • BYRON B. (2026)</div>
     </div>
@@ -283,11 +283,11 @@ td {
         <div class="geo-card">
             <h4>📋 DATOS GENERALES Y PP</h4>
             <div class="grid-2">
-                <div><label class="label">TÉCNICO</label><input type="text" id="tec_id" class="in-field" value="Byron Bravo"></div>
-                <div><label class="label">SECTOR</label><input type="text" id="proj_sector" class="in-field" placeholder="Zaruma"></div>
+                <div><label class="label">TÉCNICO</label><input type="text" id="tec_id" class="in-field" placeholder="Ingrese su nombre"></div>
+                <div><label class="label">SECTOR</label><input type="text" id="proj_sector" class="in-field" placeholder="Sector de referencia"></div>
             </div>
             <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px;">
-                <div><label class="label">MINA / PROYECTO</label><input type="text" id="mina_id" class="in-field" placeholder="Mina-01"></div>
+                <div><label class="label">MINA / PROYECTO</label><input type="text" id="mina_id" class="in-field" placeholder="Nombre de mina"></div>
                 <div><label class="label">FECHA</label><input type="text" id="fecha_proj" class="in-field" readonly></div>
                 <div><label class="label">HORA</label><input type="text" id="hora_proj" class="in-field" readonly></div>
             </div>
@@ -296,15 +296,15 @@ td {
 <div class="grid-gps">
     <div>
         <span class="label" style="color:#64748b">ESTE (X)</span>
-        <input type="number" id="base_x" class="in-field" value="654321">
+        <input type="number" id="base_x" class="in-field" placeholder="0.00">
     </div>
     <div>
         <span class="label" style="color:#64748b">NORTE (Y)</span>
-        <input type="number" id="base_y" class="in-field" value="9587654">
+        <input type="number" id="base_y" class="in-field" placeholder="0.00">
     </div>
     <div>
         <span class="label" style="color:#64748b">ELEV. (Z)</span>
-        <input type="number" id="base_z" class="in-field" value="1200">
+        <input type="number" id="base_z" class="in-field" placeholder="0.00">
     </div>
     <button id="btn-gps-base" onclick="obtenerGPS_UTM_Offline()" class="btn" style="background:white; color:var(--primary); border:2px solid #cbd5e1; font-size:20px; height:42px; margin-bottom:8px;">⌖</button>
 </div>
@@ -338,15 +338,15 @@ td {
             <div class="table-wrapper">
                 <table>
     <thead>
-    <tr>
-        <th style="width: 13%;">DE</th>
-        <th style="width: 13%;">A</th>
-        <th style="width: 22%;">AZ°</th>
-        <th style="width: 22%;">INC°</th>
-        <th style="width: 20%;">DIST</th>
-        <th style="width: 10%;">✕</th>
-    </tr>
-</thead>
+        <tr>
+            <th style="width: 15%;">DE</th>
+            <th style="width: 15%;">A</th>
+            <th style="width: 20%;">AZ°</th>
+            <th style="width: 20%;">INC°</th>
+            <th style="width: 20%;">DIST</th>
+            <th style="width: 10%;">✕</th>
+        </tr>
+    </thead>
     <tbody id="cuerpo_tabla"></tbody>
 </table>
             </div>
@@ -821,7 +821,7 @@ function finalizarCapturaGPS(pos, watchID) {
 
     // 2. Llenado de Metadatos (Cuerpo del Informe)
     document.getElementById('mina_id').value = d.m || "";
-    document.getElementById('tec_id').value = d.tec || "Byron Bravo";
+    document.getElementById('tec_id').value = d.tec || "";
     document.getElementById('proj_sector').value = d.sec || "";
     document.getElementById('fecha_proj').value = d.f || "";
     
@@ -858,13 +858,28 @@ function finalizarCapturaGPS(pos, watchID) {
 }
 
     function nuevoProyecto() {
-        if(confirm("¿Limpiar todo?")) {
-            puntos = [];
-            document.getElementById('mina_id').value = "";
-            document.getElementById('base_x').value = ""; document.getElementById('base_y').value = ""; document.getElementById('base_z').value = "";
-            actualizarFechaHora(); recalcularYUI();
-        }
+    if(confirm("¿Deseas limpiar todos los campos para un nuevo proyecto?")) {
+        puntos = [];
+        
+        // Limpiamos Metadatos
+        document.getElementById('mina_id').value = "";
+        document.getElementById('tec_id').value = ""; // Limpia el nombre
+        document.getElementById('proj_sector').value = "";
+        
+        // Limpiamos Coordenadas PP
+        document.getElementById('base_x').value = ""; 
+        document.getElementById('base_y').value = ""; 
+        document.getElementById('base_z').value = "";
+        
+        // Limpiamos la Caja Negra (opcional, para empezar de cero total)
+        localStorage.removeItem("SURVEY_RESCUE");
+        
+        actualizarFechaHora(); 
+        recalcularYUI();
+        
+        alert("✨ Formulario listo para nuevo ingreso.");
     }
+}
 
     function cerrarRevision() { document.getElementById('modal-revision').style.display = 'none'; }
     function abrirRevision() { document.getElementById('modal-revision').style.display = 'flex'; cargarListaProyectos(); }
