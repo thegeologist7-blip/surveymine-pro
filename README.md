@@ -1,4 +1,4 @@
-# SurveyMine Pro v7.0 ⚒️
+# SurveyMine Pro v8.1 ⚒️
 ### Sistema de Levantamiento Subterráneo y Geodesia Minera
 
 SurveyMine Pro es una **Progressive Web App (PWA)** diseñada específicamente para el trabajo de campo en minería subterránea y túneles. Permite realizar levantamientos topográficos rápidos directamente desde un dispositivo móvil, optimizando la toma de datos en entornos sin conectividad.
